@@ -1,0 +1,5 @@
+DB_NAME = "hh_vacancies"
+DB_USER = "postgres"
+DB_PASSWORD = "2181"
+DB_HOST = "127.0.0.1"
+API_URL = "https://api.hh.ru/vacancies"
