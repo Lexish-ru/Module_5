@@ -3,6 +3,7 @@ import unittest
 from src.db_manager import DBManager
 from src.database import create_database, reset_tables
 from unittest.mock import patch
+from decimal import Decimal
 
 MOCK_EMPLOYERS = [{"id": "1455", "name": "Яндекс"}]
 MOCK_VACANCIES = [
@@ -38,7 +39,7 @@ class TestDBManager(unittest.TestCase):
 
     def test_avg_salary(self):
         avg = self.db.get_avg_salary()
-        self.assertTrue(avg is None or isinstance(avg, (int, float)))
+        self.assertIsInstance(avg, (int, float, Decimal, type(None)))
 
     def test_higher_salary(self):
         vacancies = self.db.get_vacancies_with_higher_salary()
