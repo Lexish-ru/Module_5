@@ -2,7 +2,7 @@
 import unittest
 from unittest.mock import patch
 from src.interface import insert_data
-from src.database import create_database
+from src.database import create_database, reset_tables
 
 MOCK_EMPLOYERS = [{"id": "1455", "name": "Яндекс"}]
 MOCK_VACANCIES = [
@@ -16,6 +16,7 @@ class TestInterface(unittest.TestCase):
     @patch("src.interface.get_top_employers", return_value=MOCK_EMPLOYERS)
     def test_insert_data_runs_without_error(self, mock_employers, mock_vacancies):
         create_database()
+        reset_tables()
         try:
             insert_data()
         except Exception as e:

@@ -1,7 +1,7 @@
 
 import unittest
 from src.db_manager import DBManager
-from src.database import create_database
+from src.database import create_database, reset_tables
 from unittest.mock import patch
 
 MOCK_EMPLOYERS = [{"id": "1455", "name": "Яндекс"}]
@@ -18,6 +18,7 @@ class TestDBManager(unittest.TestCase):
     def setUpClass(cls, mock_employers, mock_vacancies):
         from src.interface import insert_data
         create_database()
+        reset_tables()
         insert_data()
         cls.db = DBManager()
 

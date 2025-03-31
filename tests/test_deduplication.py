@@ -1,8 +1,7 @@
 
 import unittest
 from unittest.mock import patch
-from src.db_manager import DBManager
-from src.database import create_database
+from src.database import create_database, reset_tables
 from src.interface import insert_data
 import psycopg2
 from src.config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST
@@ -19,6 +18,7 @@ class TestDeduplication(unittest.TestCase):
     @patch("src.interface.get_top_employers", return_value=MOCK_EMPLOYERS)
     def test_employers_not_duplicated(self, mock_employers, mock_vacancies):
         create_database()
+        reset_tables()
         insert_data()
         insert_data()
 

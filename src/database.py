@@ -31,3 +31,14 @@ def create_database():
     conn.commit()
     cur.close()
     conn.close()
+
+
+def reset_tables():
+    conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST)
+    cur = conn.cursor()
+    cur.execute("DELETE FROM vacancies")
+    cur.execute("DELETE FROM employers")
+    conn.commit()
+    cur.close()
+    conn.close()
+
