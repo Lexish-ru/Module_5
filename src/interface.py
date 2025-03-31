@@ -1,5 +1,6 @@
+
 from src.db_manager import DBManager
-from src.database import create_database
+from src.database import create_database, reset_tables
 from src.hh_api import (
     get_top_employers,
     get_vacancies_from_hh,
@@ -16,22 +17,18 @@ def insert_data():
     employers = get_top_employers()
 
     for employer in employers:
-        # Проверка: есть ли работодатель в БД
         cur.execute("SELECT id FROM employers WHERE hh_id = %s", (employer["id"],))
         existing = cur.fetchone()
 
         if existing:
             employer_id = existing[0]
-            print(f"Работодатель {employer['name']} уже есть в БД, id = {employer_id}")
         else:
             cur.execute(
                 "INSERT INTO employers (hh_id, name) VALUES (%s, %s) RETURNING id",
                 (employer["id"], employer["name"])
             )
             employer_id = cur.fetchone()[0]
-            print(f"Добавлен работодатель: {employer['name']}")
 
-        # Получаем и вставляем вакансии
         vacancies = get_vacancies_from_hh(employer["id"])
         for vacancy in vacancies:
             salary = vacancy.get("salary")
@@ -46,74 +43,81 @@ def insert_data():
     conn.close()
 
 
+def get_user_input(prompt: str) -> str:
+    return input(prompt)
+
+
+def show_companies_and_vacancies():
+    db = DBManager()
+    results = db.get_companies_and_vacancies_count()
+    for company, count in results:
+        print(f"{company}: {count} вакансий")
+
+
+def show_all_vacancies():
+    db = DBManager()
+    results = db.get_all_vacancies()
+    for title, salary, url, company in results:
+        print(f"{title} | {salary or '—'} | {company} | {url}")
+
+
+def show_avg_salary():
+    db = DBManager()
+    avg = db.get_avg_salary()
+    print(f"Средняя зарплата: {round(avg) if avg else 'Нет данных'}")
+
+
+def show_high_salary_vacancies():
+    db = DBManager()
+    results = db.get_vacancies_with_higher_salary()
+    for title, salary in results:
+        print(f"{title} | {salary}")
+
+
+def search_vacancies_by_keyword():
+    db = DBManager()
+    keyword = get_user_input("Введите ключевое слово: ")
+    results = db.get_vacancies_with_keyword(keyword)
+    for title, salary, url in results:
+        print(f"{title} | {salary or '—'} | {url}")
+
 
 def main():
-    db = None  # Соединение создаём после создания базы
-
     while True:
-        print("\n=== Меню ===")
-        print("1. Создать базу данных (удалит старую!)")
-        print("2. Загрузить данные с hh.ru")
-        print("3. Показать компании и количество вакансий")
-        print("4. Показать все вакансии")
-        print("5. Показать среднюю зарплату")
-        print("6. Показать вакансии с зарплатой выше средней")
-        print("7. Поиск вакансий по ключевому слову")
-        print("8. Добавить новую компанию в список (по названию)")
-        print("0. Выход")
+        print("""
+=== Меню ===
+1. Создать базу данных (удалит старую!)
+2. Загрузить данные с hh.ru
+3. Показать компании и количество вакансий
+4. Показать все вакансии
+5. Показать среднюю зарплату
+6. Показать вакансии с зарплатой выше средней
+7. Поиск вакансий по ключевому слову
+8. Добавить новую компанию в список (по названию)
+0. Выход
+""")
 
         choice = input("Выберите действие: ")
 
         if choice == "1":
-            if db:
-                db.close()
             create_database()
-            print("База данных создана.")
-            db = DBManager()
-
+            reset_tables()
+            print("База данных создана и очищена.")
         elif choice == "2":
-            if db is None:
-                db = DBManager()
             insert_data()
-            print("Данные успешно загружены.")
-
+            print("Данные загружены.")
         elif choice == "3":
-            if db is None:
-                db = DBManager()
-            results = db.get_companies_and_vacancies_count()
-            for company, count in results:
-                print(f"{company}: {count} вакансий")
-
+            show_companies_and_vacancies()
         elif choice == "4":
-            if db is None:
-                db = DBManager()
-            results = db.get_all_vacancies()
-            for title, salary, url, company in results:
-                print(f"{title} | {salary or '—'} | {company} | {url}")
-
+            show_all_vacancies()
         elif choice == "5":
-            if db is None:
-                db = DBManager()
-            avg = db.get_avg_salary()
-            print(f"Средняя зарплата: {round(avg) if avg else 'Нет данных'}")
-
+            show_avg_salary()
         elif choice == "6":
-            if db is None:
-                db = DBManager()
-            results = db.get_vacancies_with_higher_salary()
-            for title, salary in results:
-                print(f"{title} | {salary}")
-
+            show_high_salary_vacancies()
         elif choice == "7":
-            if db is None:
-                db = DBManager()
-            keyword = input("Введите ключевое слово: ")
-            results = db.get_vacancies_with_keyword(keyword)
-            for title, salary, url in results:
-                print(f"{title} | {salary or '—'} | {url}")
-
+            search_vacancies_by_keyword()
         elif choice == "8":
-            name = input("Введите название компании для поиска на hh.ru: ")
+            name = get_user_input("Введите название компании для поиска на hh.ru: ")
             result = search_employer_by_name(name)
             if result:
                 print(f"Найдена компания: {result['name']} (ID: {result['id']})")
@@ -124,12 +128,7 @@ def main():
                     print("Компания уже есть в списке.")
             else:
                 print("Компания не найдена.")
-
         elif choice == "0":
-            print("До свидания!")
-            if db:
-                db.close()
             break
-
         else:
-            print("Неверный выбор. Попробуйте снова.")
+            print("Неверный ввод. Попробуйте ещё раз.")
