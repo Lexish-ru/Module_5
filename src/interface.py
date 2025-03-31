@@ -70,8 +70,8 @@ def show_avg_salary():
 def show_high_salary_vacancies():
     db = DBManager()
     results = db.get_vacancies_with_higher_salary()
-    for title, salary in results:
-        print(f"{title} | {salary}")
+    for title, salary, company in results:
+        print(f"{title} | {salary} | {company}")
 
 
 def search_vacancies_by_keyword():

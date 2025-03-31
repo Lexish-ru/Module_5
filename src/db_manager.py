@@ -38,12 +38,13 @@ class DBManager:
             return cur.fetchone()[0]
 
     def get_vacancies_with_higher_salary(self):
-        avg_salary = self.get_avg_salary()
         with self.conn.cursor() as cur:
             cur.execute("""
-                SELECT title, salary FROM vacancies
-                WHERE salary > %s
-            """, (avg_salary,))
+                SELECT v.title, v.salary, e.name
+                FROM vacancies v
+                JOIN employers e ON v.employer_id = e.id
+                WHERE v.salary > (SELECT AVG(salary) FROM vacancies WHERE salary IS NOT NULL)
+            """)
             return cur.fetchall()
 
     def get_vacancies_with_keyword(self, keyword):
