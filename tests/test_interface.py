@@ -76,7 +76,7 @@ class TestInterfaceShow(unittest.TestCase):
     def test_show_high_salary_vacancies(self, mock_db):
         instance = mock_db.return_value
         instance.get_vacancies_with_higher_salary.return_value = [
-            ("Senior Dev", 200000)
+            ("Senior Dev", 200000, "VK")
         ]
         show_high_salary_vacancies()
         instance.get_vacancies_with_higher_salary.assert_called_once()
