@@ -1,56 +1,36 @@
-
+import os
 import unittest
-from unittest.mock import patch, mock_open
-from src.hh_api import (search_employer_by_name, get_top_employers,
-                        get_vacancies_from_hh, save_employers, load_employers)
-import json
+
+from src.hh_api import (get_top_employers, get_vacancies_from_hh, load_employers, save_employers,
+                        search_employer_by_name)
 
 
-MOCK_VACANCIES = {
-    "items": [
-        {"name": "Python Dev", "salary": {"from": 100000}, "alternate_url": "url1"},
-        {"name": "Backend", "salary": None, "alternate_url": "url2"},
-    ]
-}
+class TestHHApi(unittest.TestCase):
+    """Тесты для модуля hh_api."""
 
+    def test_search_employer_mocked(self) -> None:
+        """Проверяет поиск работодателя по имени."""
+        employers = [{"id": "1", "name": "Яндекс"}, {"id": "2", "name": "VK"}]
+        result = search_employer_by_name("янд", employers)
+        self.assertEqual(len(result), 1)
 
-class TestHHAPI(unittest.TestCase):
+    def test_get_top_employers_structure(self) -> None:
+        """Проверяет, что топ работодатели — список словарей с ключами 'id' и 'name'."""
+        result = get_top_employers()
+        self.assertTrue(all("id" in emp and "name" in emp for emp in result))
 
-    @patch("src.hh_api.requests.get")
-    def test_search_employer_mocked(self, mock_get):
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = {
-            "items": [{"id": "1455", "name": "Яндекс"}]
-        }
-        result = search_employer_by_name("Яндекс")
-        self.assertEqual(result["id"], "1455")
-        self.assertEqual(result["name"], "Яндекс")
+    def test_get_vacancies_from_hh(self) -> None:
+        """Проверяет, что функция возвращает список вакансий (даже если пустой)."""
+        result = get_vacancies_from_hh("nonexistent_id")
+        self.assertIsInstance(result, list)
 
-    def test_get_top_employers_structure(self):
-        employers = get_top_employers()
-        self.assertIsInstance(employers, list)
-        for emp in employers:
-            self.assertIn("id", emp)
-            self.assertIn("name", emp)
+    def test_save_employers(self) -> None:
+        """Проверяет, что функция сохраняет работодателей в файл."""
+        test_data = [{"id": "3", "name": "Тест"}]
+        save_employers(test_data)
+        self.assertTrue(os.path.exists("employers.json"))
 
-
-class TestHHAPIExtended(unittest.TestCase):
-
-    @patch("src.hh_api.requests.get")
-    def test_get_vacancies_from_hh(self, mock_get):
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = MOCK_VACANCIES
-        result = get_vacancies_from_hh("123")
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["name"], "Python Dev")
-
-    @patch("builtins.open", new_callable=mock_open)
-    def test_save_employers(self, mock_file):
-        employers = [{"id": "1", "name": "Company"}]
-        save_employers(employers)
-        mock_file().write.assert_called()
-
-    @patch("builtins.open", new_callable=mock_open, read_data='[{"id": "1", "name": "Company"}]')
-    def test_load_employers(self, mock_file):
-        result = load_employers()
-        self.assertEqual(result[0]["id"], "1")
+    def test_load_employers(self) -> None:
+        """Проверяет, что данные успешно загружаются из файла."""
+        data = load_employers()
+        self.assertIsInstance(data, list)

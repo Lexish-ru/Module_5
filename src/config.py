@@ -1,5 +1,13 @@
-DB_NAME = "hh_vacancies"
-DB_USER = "postgres"
-DB_PASSWORD = "2181"
-DB_HOST = "127.0.0.1"
-API_URL = "https://api.hh.ru/vacancies"
+import os
+
+from dotenv import load_dotenv
+
+# Загружаем переменные из .env
+load_dotenv()
+
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST")
+
+API_URL = os.getenv("API_URL")

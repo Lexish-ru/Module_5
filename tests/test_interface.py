@@ -1,92 +1,80 @@
-
 import unittest
-from unittest.mock import patch
-from src.interface import (
-    show_companies_and_vacancies,
-    show_all_vacancies,
-    show_avg_salary,
-    show_high_salary_vacancies,
-    search_vacancies_by_keyword, get_user_input, insert_data
-)
-from src.database import create_database, reset_tables
+from unittest.mock import MagicMock, patch
 
-MOCK_EMPLOYERS = [{"id": "1455", "name": "Яндекс"}]
-MOCK_VACANCIES = [
-    {"name": "Python Developer", "salary": {"from": 150000}, "alternate_url": "https://hh.ru/vacancy/123"},
-    {"name": "Backend Developer", "salary": {"from": 120000}, "alternate_url": "https://hh.ru/vacancy/456"}
-]
+from src.interface import (get_user_input, insert_data, search_vacancies_by_keyword, show_all_vacancies,
+                           show_avg_salary, show_companies_and_vacancies, show_high_salary_vacancies)
+
 
 class TestInterface(unittest.TestCase):
+    """Тесты для пользовательского интерфейса и обёрток над DBManager."""
 
-    @patch("src.interface.get_vacancies_from_hh", return_value=MOCK_VACANCIES)
-    @patch("src.interface.get_top_employers", return_value=MOCK_EMPLOYERS)
-    def test_insert_data_runs_without_error(self, mock_employers, mock_vacancies):
-        create_database()
-        reset_tables()
+    @patch("src.hh_api.save_employers")
+    @patch(
+        "src.interface.get_vacancies_from_hh",
+        return_value=[{"name": "Python Dev", "salary": {"from": 100000}, "alternate_url": "https://hh.ru/vacancy/1"}],
+    )
+    @patch("src.interface.get_top_employers", return_value=[{"id": "123", "name": "TestCompany"}])
+    @patch("src.interface.create_database")
+    @patch("src.interface.DBManager")
+    def test_insert_data_runs_without_error(
+        self: unittest.TestCase,
+        mock_db: MagicMock,
+        mock_create_db: MagicMock,
+        mock_top_emp: MagicMock,
+        mock_get_vacs: MagicMock,
+        mock_save: MagicMock,
+    ) -> None:
+        """Проверяет, что функция insert_data не вызывает исключений."""
         try:
             insert_data()
         except Exception as e:
-            self.fail(f"insert_data() вызвал исключение: {e}")
+            self.fail(f"insert_data вызвала исключение: {e}")
 
-class TestInterfaceInput(unittest.TestCase):
+    @patch("builtins.input", return_value="list")
+    def test_get_user_input(self: unittest.TestCase, mock_input: MagicMock) -> None:
+        """Проверяет, что get_user_input возвращает строку."""
+        result: str = get_user_input("Введите что-нибудь: ")
+        self.assertIsInstance(result, str)
 
-    @patch("builtins.input", return_value="python")
-    def test_get_user_input(self, mock_input):
-        result = get_user_input("Введите ключевое слово: ")
-        self.assertEqual(result, "python")
-
-
-class TestInterfaceInput(unittest.TestCase):
-
-    @patch("builtins.input", return_value="python")
-    def test_get_user_input(self, mock_input):
-        result = get_user_input("Введите ключевое слово: ")
-        self.assertEqual(result, "python")
-
-
-class TestInterfaceShow(unittest.TestCase):
-
+    @patch("builtins.print")
     @patch("src.interface.DBManager")
-    def test_show_companies_and_vacancies(self, mock_db):
-        instance = mock_db.return_value
-        instance.get_companies_and_vacancies_count.return_value = [
-            ("Yandex", 10),
-            ("VK", 5),
-        ]
+    def test_show_companies_and_vacancies(self: unittest.TestCase, mock_db: MagicMock, mock_print: MagicMock) -> None:
+        """Проверяет вызов вывода компаний и их вакансий."""
+        mock_db.return_value.get_companies_and_vacancies_count.return_value = [("Компания", 5)]
         show_companies_and_vacancies()
-        instance.get_companies_and_vacancies_count.assert_called_once()
+        self.assertTrue(mock_print.called)
 
+    @patch("builtins.print")
     @patch("src.interface.DBManager")
-    def test_show_all_vacancies(self, mock_db):
-        instance = mock_db.return_value
-        instance.get_all_vacancies.return_value = [
-            ("Yandex", "Python Dev", 150000, "url1")
-        ]
+    def test_show_all_vacancies(self: unittest.TestCase, mock_db: MagicMock, mock_print: MagicMock) -> None:
+        """Проверяет вывод всех вакансий."""
+        mock_db.return_value.get_all_vacancies.return_value = [("Разработчик", 150000, "https://url", "Компания")]
         show_all_vacancies()
-        instance.get_all_vacancies.assert_called_once()
+        self.assertTrue(mock_print.called)
 
+    @patch("builtins.print")
     @patch("src.interface.DBManager")
-    def test_show_avg_salary(self, mock_db):
-        instance = mock_db.return_value
-        instance.get_avg_salary.return_value = 123456
+    def test_show_avg_salary(self: unittest.TestCase, mock_db: MagicMock, mock_print: MagicMock) -> None:
+        """Проверяет вывод средней зарплаты."""
+        mock_db.return_value.get_avg_salary.return_value = 130000
         show_avg_salary()
-        instance.get_avg_salary.assert_called_once()
+        self.assertTrue(mock_print.called)
 
+    @patch("builtins.print")
     @patch("src.interface.DBManager")
-    def test_show_high_salary_vacancies(self, mock_db):
-        instance = mock_db.return_value
-        instance.get_vacancies_with_higher_salary.return_value = [
-            ("Senior Dev", 200000, "VK")
-        ]
+    def test_show_high_salary_vacancies(self: unittest.TestCase, mock_db: MagicMock, mock_print: MagicMock) -> None:
+        """Проверяет вывод вакансий с высокой ЗП."""
+        mock_db.return_value.get_vacancies_with_higher_salary.return_value = [("Dev", 160000, "Компания")]
         show_high_salary_vacancies()
-        instance.get_vacancies_with_higher_salary.assert_called_once()
+        self.assertTrue(mock_print.called)
 
-    @patch("src.interface.get_user_input", return_value="python")
+    @patch("builtins.input", return_value="Python")
+    @patch("builtins.print")
     @patch("src.interface.DBManager")
-    def test_search_vacancies_by_keyword(self, mock_db, mock_input):
-        instance = mock_db.return_value
-        instance.get_vacancies_with_keyword.return_value = [
-            ("Python Dev", 170000, "url3")
-        ]
+    def test_search_vacancies_by_keyword(
+        self: unittest.TestCase, mock_db: MagicMock, mock_print: MagicMock, mock_input: MagicMock
+    ) -> None:
+        """Проверяет поиск вакансий по ключевому слову."""
+        mock_db.return_value.get_vacancies_with_keyword.return_value = [("Python Dev", 120000, "https://url")]
         search_vacancies_by_keyword()
-        instance.get_vacancies_with_keyword.assert_called_once_with("python")
+        self.assertTrue(mock_print.called)

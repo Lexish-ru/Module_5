@@ -1,14 +1,9 @@
-
-from src.db_manager import DBManager
-from src.database import create_database, reset_tables
-from src.hh_api import (
-    get_top_employers,
-    get_vacancies_from_hh,
-    search_employer_by_name,
-    add_employer_to_list
-)
 import psycopg2
-from src.config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST
+
+from src.config import DB_HOST, DB_NAME, DB_PASSWORD, DB_USER
+from src.database import create_database, reset_tables
+from src.db_manager import DBManager
+from src.hh_api import add_employer_to_list, get_top_employers, get_vacancies_from_hh, search_employer_by_name
 
 
 def insert_data():
@@ -24,8 +19,7 @@ def insert_data():
             employer_id = existing[0]
         else:
             cur.execute(
-                "INSERT INTO employers (hh_id, name) VALUES (%s, %s) RETURNING id",
-                (employer["id"], employer["name"])
+                "INSERT INTO employers (hh_id, name) VALUES (%s, %s) RETURNING id", (employer["id"], employer["name"])
             )
             employer_id = cur.fetchone()[0]
 
@@ -35,7 +29,7 @@ def insert_data():
             salary_amount = salary["from"] if salary and salary.get("from") else None
             cur.execute(
                 "INSERT INTO vacancies (employer_id, title, salary, url) VALUES (%s, %s, %s, %s)",
-                (employer_id, vacancy["name"], salary_amount, vacancy["alternate_url"])
+                (employer_id, vacancy["name"], salary_amount, vacancy["alternate_url"]),
             )
 
     conn.commit()
@@ -84,7 +78,8 @@ def search_vacancies_by_keyword():
 
 def main():
     while True:
-        print("""
+        print(
+            """
 === Меню ===
 1. Создать базу данных (удалит старую!)
 2. Загрузить данные с hh.ru
@@ -95,7 +90,8 @@ def main():
 7. Поиск вакансий по ключевому слову
 8. Добавить новую компанию в список (по названию)
 0. Выход
-""")
+"""
+        )
 
         choice = input("Выберите действие: ")
 
